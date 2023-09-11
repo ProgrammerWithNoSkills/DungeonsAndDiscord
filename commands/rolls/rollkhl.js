@@ -1,3 +1,5 @@
+"use strict";
+
 const { SlashCommandBuilder } = require('discord.js');
 
 function getRandomInt(min, max) {
@@ -39,27 +41,46 @@ module.exports = {
 		const hiddenMessage = interaction.options.getBoolean('hidden')
 		const generatedNumbers = []
 
-		for (let i = 0; i < diceInput; i++) {
-			let number = getRandomInt(1, diceValue)
-			generatedNumbers.push(number)
-		}
-
-		let sorted = generatedNumbers.sort()
-
-		if (chosen) {
-			var rollsSeleted = sorted.slice(sorted.length - valueKept, sorted.length)
-			for (let i = 0; i < sorted.length - valueKept; i++) {
-				sorted[i] = `~~${sorted[i]}~~`
-			}
+		// Prevents error from too many characters
+		if (diceInput > 100 || diceValue > 100) {
+			await interaction.reply('Values too large!')
+		} else if (valueKept > diceInput) {
+			await interaction.reply('Cannot keep more dice than is specified!')
 		} else {
-			var rollsSeleted = sorted.slice(0, valueKept)
-			for (let i = valueKept; i < sorted.length; i++) {
-				sorted[i] = `~~${sorted[i]}~~`
+			// Makes array of randomly generated numbers
+			for (let i = 0; i < diceInput; i++) {
+				let number = getRandomInt(1, diceValue)
+				generatedNumbers.push(number)
 			}
+
+			// Sorts the array according to integer value
+			// Ignore the strange JS syntax
+			let sorted = generatedNumbers.sort((a, b) => a - b)
+
+			// Choses highest/lowest dice and adds strikethrough
+			if (chosen) {
+				var rollsSeleted = sorted.slice(sorted.length - valueKept, sorted.length)
+				for (let i = 0; i < sorted.length - valueKept; i++) {
+					sorted[i] = `~~${sorted[i]}~~`
+				}
+			} else {
+				var rollsSeleted = sorted.slice(0, valueKept)
+				for (let i = valueKept; i < sorted.length; i++) {
+					sorted[i] = `~~${sorted[i]}~~`
+				}
+			}
+
+			//Bolds chosen dice which are 1 or diceValue
+			for (let i = 0; i < sorted.length; i++) {
+				if (sorted[i] === 1 || sorted[i] === diceValue) {
+					sorted[i] = `**${sorted[i]}**`
+				}
+			}
+
+			// Sums the chosen values
+			const sum = rollsSeleted.reduce((partialSum, a) => partialSum + a, 0);
+
+			await interaction.reply({ content: `Dice Rolled: **${diceInput}D${diceValue}**, \nTotal: **${sum}**, \nRolls are: ${sorted}`, ephemeral: hiddenMessage });
 		}
-
-		const sum = rollsSeleted.reduce((partialSum, a) => partialSum + a, 0);
-
-		await interaction.reply({ content: `Total: ${sum}, \nRolls are: ${sorted}`, ephemeral: hiddenMessage });
 	},
 };

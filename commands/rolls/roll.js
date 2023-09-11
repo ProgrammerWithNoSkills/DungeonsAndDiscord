@@ -1,3 +1,5 @@
+"use strict";
+
 const { SlashCommandBuilder } = require('discord.js');
 
 function getRandomInt(min, max) {
@@ -29,13 +31,27 @@ module.exports = {
 		const hiddenMessage = interaction.options.getBoolean('hidden')
 		const generatedNumbers = []
 
-		for (let i = 0; i < diceInput; i++) {
-			let number = getRandomInt(1, diceValue)
-			generatedNumbers.push(number)
+		// Prevents error from too many characters
+		if (diceInput > 100 || diceValue > 100) {
+			await interaction.reply('Values too large!')
+		} else {
+			// Makes array of randomly generated numbers
+			for (let i = 0; i < diceInput; i++) {
+				let number = getRandomInt(1, diceValue)
+				generatedNumbers.push(number)
+			}
+
+			// Sums the generated numbers
+			const sum = generatedNumbers.reduce((partialSum, a) => partialSum + a, 0);
+
+			// Bolds 1 or diceValues
+			for (let i = 0; i < generatedNumbers.length; i++) {
+				if (generatedNumbers[i] === 1 || generatedNumbers[i] === diceValue) {
+					generatedNumbers[i] = `**${generatedNumbers[i]}**`
+				}
+			}
+
+			await interaction.reply({ content: `Dice Rolled: **${diceInput}D${diceValue}**, \nTotal: **${sum}**, \nRolls are: ${generatedNumbers}`, ephemeral: hiddenMessage });
 		}
-
-		const sum = generatedNumbers.reduce((partialSum, a) => partialSum + a, 0);
-
-		await interaction.reply({ content: `Total: ${sum}, \nRolls are: ${generatedNumbers}`, ephemeral: hiddenMessage });
 	},
 };
